@@ -1,0 +1,43 @@
+<!-- Mail Merge HTML Template Example -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mail Merge Example</title>
+</head>
+
+<body>
+    <h2>{StartDate} {Q5} - {Q8}</h2>
+    <br>
+    <p>Company Name: <strong>{Q5}</strong> (URL: <strong><a href="{Q6}" target="_blank">{Q6}</a></strong>)</p>
+    <p>Job Title: <strong>{Q8}</strong> (Type: <strong>{Q17}</strong>)</p>
+    <p>Start Date: <strong>{Q14}</strong> (Duration: <strong>{Q15}</strong>)</p>
+    <p>Salary: <strong>{Q16}</strong></p>
+    <br>
+    <p>Job Requirement</p>
+    <p>{Q19}</p>
+    <br>
+    <p>Job Description</p>
+    <p>{Q20}</p>
+    <br>
+    <p>Application</p>
+    <p>{Q21}</p>
+    <br>
+    <p>Remarks</p>
+    <p>{Q22}</p>
+    <br>
+    Attachment(s):<br>
+    <div style="font-family: 'Consolas', 'Courier New', monospace;">
+        <div style="font-family: monospace;">
+            <a
+                href="https://hkbuchtl.qualtrics.com/Q/File.php?F={Q23_Id}">https://hkbuchtl.qualtrics.com/Q/File.php?F={Q23_Id}</a><br>
+            <a
+                href="https://hkbuchtl.qualtrics.com/Q/File.php?F={Q24_Id}">https://hkbuchtl.qualtrics.com/Q/File.php?F={Q24_Id}</a>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
