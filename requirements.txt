@@ -1,0 +1,6 @@
+streamlit
+pandas
+xhtml2pdf
+PyPDF2
+reportlab
+numpy
