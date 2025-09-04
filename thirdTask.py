@@ -1,6 +1,8 @@
 # --- PDF Page Numbering Utility ---
 import io
 from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 
 # --- Robust watermark approach for page numbers ---
@@ -11,6 +13,8 @@ def create_page_number_overlay(num_pages, page_sizes):
     """
     overlay_buffer = io.BytesIO()
     from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+    from PyPDF2 import PdfWriter
     can = canvas.Canvas(overlay_buffer)
     for i, (width, height) in enumerate(page_sizes):
         can.setPageSize((width, height))
@@ -53,16 +57,6 @@ from xhtml2pdf import pisa  # For PDF generation
 import numpy as np  # For NaN handling
 
 st.title('Mail Merge Document Generator')
-
-# --- Download HTML Template Section ---
-with open("mail_merge_template.html", "r", encoding="utf-8") as f:
-    template_contents = f.read()
-st.download_button(
-    label="Download HTML Template",
-    data=template_contents,
-    file_name="mail_merge_template.html",
-    mime="text/html"
-)
 
 def get_cache_paths(hash_str):
     cache_dir = pathlib.Path('.cache')
@@ -420,64 +414,66 @@ if template_file is not None and 'main_data' in st.session_state and not st.sess
                     except KeyError as e:
                         st.error(f"Missing placeholder in template: {e}")
                         st.stop()
-                # --- TOC Generation ---
-                # Find all <h2>...</h2> headings in merged_html
-                headings = re.findall(r'<h2[^>]*>(.*?)</h2>', merged_html, re.DOTALL)
-                toc_html = (
-                    "<div style='display: flex; flex-direction: column; justify-content: center; align-items: center; height: 80vh;'>"
-                    "<h1 style='text-align:center; margin-bottom: 40px;'>Table of Contents</h1>"
-                    "<table style='font-size:1.2em; width: 90%; margin: 0 auto; border-collapse: collapse;'>"
-                )
-                for idx, heading in enumerate(headings):
-                    toc_html += f"<tr><td style='padding: 8px 0 8px 10px; text-align: left; border: none;'>{idx+1}. {heading}</td><td style='padding: 8px 10px 8px 0; text-align: right; border: none; width: 60px;'>{idx+2}</td></tr>"
-                toc_html += (
-                    "</table>"
-                    "</div>"
-                    "<div style='page-break-after: always;'></div>"
-                )
+            # --- TOC Generation ---
+            # Find all <h1>, <h2>, <h3>...</h1|2|3> headings in merged_html
+            headings = re.findall(r'<h[123][^>]*>(.*?)</h[123]>', merged_html, re.DOTALL)
+            # Debug: print or display the extracted headings
+            st.write('Extracted TOC headings:', headings)
+            toc_html = (
+                "<div style='text-align:center; margin-top: 40px;'>"
+                "<h1 style='text-align:center; margin-bottom: 40px;'>Table of Contents</h1>"
+                "<table style='font-size:1.2em; width: 90%; margin: 0 auto; border-collapse: collapse;'>"
+            )
+            for idx, heading in enumerate(headings):
+                toc_html += f"<tr><td style='padding: 18px 0 18px 18px; text-align: left; border: none; font-size:1.2em;'>{idx+1}. {heading}</td><td style='padding: 18px 18px 18px 0; text-align: right; border: none; width: 60px; font-size:1.2em;'>{idx+2}</td></tr>"
+            toc_html += (
+                "</table>"
+                "</div>"
+                "<div style='page-break-after: always;'></div>"
+            )
                 # Prepend TOC to merged_html
-                merged_html_with_toc = toc_html + merged_html
-                # Create PDF
-                pdf_buffer = BytesIO()
-                full_html = f"""<!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <title>Mail Merge Result</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.7; font-size: 1.25em; }}
-                        h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
-                        h2 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
-                        strong {{ color: #2980b9; }}
-                        ol {{ padding-left: 1.2em; }}
-                    </style>
-                </head>
-                <body>
-                    {merged_html_with_toc}
-                </body>
-                </html>"""
-                import tempfile
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_in, \
-                     tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_out:
-                    # Generate PDF to temp file
-                    pisa_status = pisa.CreatePDF(
-                        BytesIO(full_html.encode("UTF-8")), 
-                        dest=tmp_in
+            merged_html_with_toc = toc_html + merged_html
+            # Create PDF
+            pdf_buffer = BytesIO()
+            full_html = f"""<!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <title>Mail Merge Result</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.7; font-size: 1.25em; }}
+                    h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
+                    h2 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
+                    strong {{ color: #2980b9; }}
+                    ol {{ padding-left: 1.2em; }}
+                </style>
+            </head>
+            <body>
+                {merged_html_with_toc}
+            </body>
+            </html>"""
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_in, \
+                 tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_out:
+                # Generate PDF to temp file
+                pisa_status = pisa.CreatePDF(
+                    BytesIO(full_html.encode("UTF-8")), 
+                    dest=tmp_in
+                )
+                tmp_in.flush()
+            if pisa_status.err:
+                st.error("PDF generation failed. Please check your HTML template.")
+            else:
+                # Add page numbers to the temp PDF
+                add_page_numbers(tmp_in.name, tmp_out.name)
+                with open(tmp_out.name, "rb") as f_final:
+                    st.success("PDF generated successfully!")
+                    st.download_button(
+                        label="Download Merged Document",
+                        data=f_final.read(),
+                        file_name="mail_merge_result.pdf",
+                        mime="application/pdf"
                     )
-                    tmp_in.flush()
-                    if pisa_status.err:
-                        st.error("PDF generation failed. Please check your HTML template.")
-                    else:
-                        # Add page numbers to the temp PDF
-                        add_page_numbers(tmp_in.name, tmp_out.name)
-                        with open(tmp_out.name, "rb") as f_final:
-                            st.success("PDF generated successfully!")
-                            st.download_button(
-                                label="Download Merged Document",
-                                data=f_final.read(),
-                                file_name="mail_merge_result.pdf",
-                                mime="application/pdf"
-                            )
     except Exception as e:
         st.error(f"Mail merge failed: {str(e)}")
         st.error("Please check your template and data format")
